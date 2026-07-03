@@ -1,0 +1,14 @@
+{
+  "name": "spanish-pdf-translator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Translate Spanish PDFs to English in the browser, search across translations, and export to .docx.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  }
+}

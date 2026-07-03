@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spanish → English PDF Translator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="app-header-main">
+        <h1>Spanish → English PDF Translator</h1>
+        <p class="subtitle">Translate Spanish PDFs to English, search across them, and export the results — entirely in your browser.</p>
+      </div>
+      <div class="brand-badge">
+        <img src="assets/logo.png" alt="Marisson Aviation Consulting logo" class="brand-logo"
+             onerror="this.style.display='none'" />
+        <span class="brand-text">Made by Marisson Aviation Consulting</span>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <aside class="sidebar">
+        <section class="input-controls">
+          <h2>Add PDFs</h2>
+          <div id="drop-zone" class="drop-zone">
+            <p>Drag &amp; drop PDF files here</p>
+            <p class="or">or</p>
+            <button id="pick-files-btn" type="button">Choose files…</button>
+            <button id="pick-folder-btn" type="button">Browse a folder on your PC…</button>
+            <input id="file-input" type="file" accept="application/pdf" multiple hidden />
+          </div>
+          <p id="folder-support-note" class="note" hidden>
+            Folder browsing needs a Chromium-based browser (Chrome, Edge). Use drag &amp; drop or "Choose files…" instead.
+          </p>
+        </section>
+
+        <section class="search-controls">
+          <h2>Search translations</h2>
+          <input id="search-input" type="search" placeholder="Search translated text…" autocomplete="off" />
+          <div id="search-results" class="search-results"></div>
+        </section>
+
+        <section class="document-list-section">
+          <h2>Documents</h2>
+          <ul id="document-list" class="document-list"></ul>
+        </section>
+      </aside>
+
+      <section class="viewer">
+        <div id="viewer-empty" class="viewer-empty">
+          <p>Add a Spanish PDF to get started. Translated text will appear here, alongside the original.</p>
+        </div>
+
+        <div id="viewer-content" class="viewer-content" hidden>
+          <div class="viewer-toolbar">
+            <h2 id="viewer-title"></h2>
+            <div class="viewer-toolbar-actions">
+              <label class="view-mode">
+                <span>View:</span>
+                <select id="view-mode-select">
+                  <option value="side-by-side">Side by side</option>
+                  <option value="translation-only">Translation only</option>
+                  <option value="original-only">Original only</option>
+                </select>
+              </label>
+              <button id="export-docx-btn" type="button">Export as .docx</button>
+            </div>
+          </div>
+
+          <div id="viewer-status" class="viewer-status"></div>
+
+          <div id="pages-container" class="pages-container"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Files never leave your device except the extracted text sent to the translation service. Nothing is stored on a server.</p>
+    </footer>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

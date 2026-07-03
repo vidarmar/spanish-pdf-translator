@@ -1,0 +1,9 @@
+{
+  "buildCommand": false,
+  "outputDirectory": ".",
+  "functions": {
+    "api/translate.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
