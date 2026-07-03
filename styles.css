@@ -321,6 +321,15 @@ body {
   min-height: 1.2em;
 }
 
+.viewer-status-error {
+  color: var(--danger);
+  font-weight: 600;
+  padding: 8px 12px;
+  background: #fdeeea;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+}
+
 .pages-container {
   display: flex;
   flex-direction: column;
@@ -365,6 +374,11 @@ body {
   white-space: pre-wrap;
   font-size: 0.92rem;
   line-height: 1.5;
+}
+
+.page-text.pending.error {
+  color: var(--danger);
+  font-style: normal;
 }
 
 .page-text mark {
