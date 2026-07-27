@@ -10,6 +10,7 @@
 // loadModule() below, the first time they're actually needed, so a failure
 // in one (e.g. the DOCX export library) can never block basic functionality
 // like selecting or dragging in a PDF.
+
 import { translatePages } from "./translateClient.js";
 import { indexPage, removeDocument as removeFromSearchIndex, search } from "./searchIndex.js";
 
@@ -187,7 +188,6 @@ async function processDocument(id, file) {
   try {
     renderStatusIfActive(id, "Loading PDF library…");
     const { processPdfFile } = await loadModule("./pdfProcessor.js");
-
     const { pages } = await processPdfFile(file, {
       onProgress: () => {
         renderStatusIfActive(id, "Extracting text…");
@@ -209,6 +209,7 @@ async function processDocument(id, file) {
       renderStatusIfActive(id, "Loading OCR library…");
     }
     const { ocrImage } = pagesNeedingOcr.length > 0 ? await loadModule("./ocr.js") : {};
+
     for (const [i, p] of pages.entries()) {
       if (p.needsOcr) {
         renderStatusIfActive(id, `Running OCR on page ${p.pageNumber}…`);
@@ -222,16 +223,27 @@ async function processDocument(id, file) {
     renderDocumentList();
     renderStatusIfActive(id, "Translating…");
 
-    await translatePages(doc.pages, {
-      onPageTranslated: (pageNumber, translation) => {
-        const page = doc.pages.find((p) => p.pageNumber === pageNumber);
-        if (page) {
-          page.translation = translation;
-          indexPage(doc.id, doc.name, pageNumber, page.original, translation);
-          renderActiveDocument();
-        }
-      },
-    });
+    // NOTE: translateClient.js's translatePages()/translateText() read a
+    // `text` field off each page object (see its JSDoc). doc.pages stores
+    // the extracted/OCR'd text under `original` instead, so we map to the
+    // shape translateClient.js expects here. Previously this mismatch meant
+    // every page's `text` was undefined, translateText()'s empty-text guard
+    // fired silently for every page, no request to /api/translate was ever
+    // made, and every page was stuck showing "Translating…" forever even
+    // though the document status flipped to "done".
+    await translatePages(
+      doc.pages.map((p) => ({ pageNumber: p.pageNumber, text: p.original })),
+      {
+        onPageTranslated: (pageNumber, translation) => {
+          const page = doc.pages.find((p) => p.pageNumber === pageNumber);
+          if (page) {
+            page.translation = translation;
+            indexPage(doc.id, doc.name, pageNumber, page.original, translation);
+            renderActiveDocument();
+          }
+        },
+      }
+    );
 
     doc.status = "done";
   } catch (err) {
@@ -240,7 +252,16 @@ async function processDocument(id, file) {
     doc.errorMessage = err.message || String(err);
   } finally {
     renderDocumentList();
-    renderStatusIfActive(id, "");
+    // If the document errored out before any pages were even created (e.g.
+    // a CDN library failed to load, or PDF extraction itself failed), there
+    // are no page blocks for a per-page error to show up in — so also put
+    // the error in the status line, which is always visible regardless of
+    // how far processing got.
+    renderStatusIfActive(id, doc.status === "error" ? `⚠ ${doc.errorMessage}` : "", doc.status === "error");
+    // Re-render the viewer so a translation failure replaces any stuck
+    // "Translating…" placeholders with a visible error instead of leaving
+    // pages looking like they're still in progress forever.
+    renderActiveDocument();
   }
 }
 
@@ -279,9 +300,10 @@ function statusLabel(doc) {
   }
 }
 
-function renderStatusIfActive(id, message) {
+function renderStatusIfActive(id, message, isError = false) {
   if (id === activeDocId) {
     el.viewerStatus.textContent = message;
+    el.viewerStatus.classList.toggle("viewer-status-error", isError);
   }
 }
 
@@ -298,25 +320,33 @@ function renderActiveDocument() {
   el.viewerTitle.textContent = doc.name;
   el.exportBtn.disabled = doc.pages.length === 0;
 
+  // What to show in a translation slot that has no text yet: still in
+  // progress ("Translating…"), or explain why it'll never fill in
+  // (translation failed for the document).
+  const pendingLabel =
+    doc.status === "error"
+      ? `Translation failed: ${escapeHtml(doc.errorMessage || "unknown error")}`
+      : "Translating…";
+  const pendingClass = doc.status === "error" ? "pending error" : "pending";
+
   el.pagesContainer.innerHTML = "";
   for (const page of doc.pages) {
     const block = document.createElement("div");
     block.className = "page-block";
 
-    const columnsClass = viewMode === "side-by-side" ? "page-columns" : "page-columns single-column";
     let columnsHtml = "";
     if (viewMode === "side-by-side") {
       columnsHtml = `
-        <div class="page-columns ${viewMode === "side-by-side" ? "" : "single-column"}">
+        <div class="page-columns">
           <div>
             <h3>Original (Spanish)</h3>
             <div class="page-text">${escapeHtml(page.original) || "<span class=\"page-text pending\">(no text)</span>"}</div>
           </div>
           <div>
             <h3>Translation (English)</h3>
-            <div class="page-text ${page.translation ? "" : "pending"}">${
-        escapeHtml(page.translation) || "Translating…"
-      }</div>
+            <div class="page-text ${page.translation ? "" : pendingClass}">${
+              escapeHtml(page.translation) || pendingLabel
+            }</div>
           </div>
         </div>
       `;
@@ -325,9 +355,9 @@ function renderActiveDocument() {
         <div class="page-columns single-column">
           <div>
             <h3>Translation (English)</h3>
-            <div class="page-text ${page.translation ? "" : "pending"}">${
-        escapeHtml(page.translation) || "Translating…"
-      }</div>
+            <div class="page-text ${page.translation ? "" : pendingClass}">${
+              escapeHtml(page.translation) || pendingLabel
+            }</div>
           </div>
         </div>
       `;

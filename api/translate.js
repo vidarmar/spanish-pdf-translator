@@ -6,7 +6,7 @@
 // ANTHROPIC_API_KEY as an environment variable in the hosting dashboard.
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-5-20250929";
+const MODEL = "claude-sonnet-5";
 const MAX_TEXT_LENGTH = 12000; // guard against runaway cost per request
 
 export default async function handler(req, res) {
@@ -27,6 +27,7 @@ export default async function handler(req, res) {
     res.status(400).json({ error: "Missing 'text' to translate" });
     return;
   }
+
   if (text.length > MAX_TEXT_LENGTH) {
     res.status(400).json({ error: `Text too long (max ${MAX_TEXT_LENGTH} characters per request)` });
     return;
@@ -51,16 +52,41 @@ export default async function handler(req, res) {
 
     if (!anthropicRes.ok) {
       const errBody = await anthropicRes.text().catch(() => "");
-      res.status(502).json({ error: `Translation service error (${anthropicRes.status})`, detail: errBody });
+      // Surface the real upstream status/body in BOTH the error and detail
+      // fields — this used to only appear in `detail`, which some earlier
+      // debugging steps weren't displaying, making failures here look
+      // identical to a generic "something went wrong" message.
+      res.status(502).json({
+        error: `Translation service error (${anthropicRes.status}): ${errBody.slice(0, 500)}`,
+        detail: errBody,
+      });
       return;
     }
 
     const data = await anthropicRes.json();
+
     const translation = (data.content ?? [])
       .filter((block) => block.type === "text")
       .map((block) => block.text)
       .join("\n")
       .trim();
+
+    // Previously, if the Claude API responded 200 OK but with no usable text
+    // block (e.g. an unexpected response shape, a refusal, or hitting
+    // max_tokens with no text emitted yet), `translation` would end up as an
+    // empty string and we'd still return 200. The client treats a 200 with
+    // no translation as "nothing to do" and just leaves the page blank —
+    // which looked EXACTLY like the app being permanently stuck on
+    // "Translating…", with no error anywhere, even though the request had
+    // actually completed. Treat an empty result as a real error instead, so
+    // it surfaces as a visible "Translation failed: ..." message in the UI.
+    if (!translation) {
+      res.status(502).json({
+        error: "Translation service returned an empty response",
+        detail: JSON.stringify(data).slice(0, 2000),
+      });
+      return;
+    }
 
     res.status(200).json({ translation });
   } catch (err) {

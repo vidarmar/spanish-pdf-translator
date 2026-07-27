@@ -52,7 +52,20 @@ export async function translateText(text) {
         }
 
         const data = await res.json();
-        return data.translation ?? "";
+
+        // Defense in depth: a 200 OK response with no usable translation
+        // used to be treated as "done, nothing to show" — the page would
+        // silently stay blank forever with no error anywhere, which looked
+        // identical to the request never having happened at all. Treat it
+        // as a real failure instead so it's surfaced to the user rather
+        // than hidden.
+        if (!data.translation || !data.translation.trim()) {
+          throw new Error(
+            `Translation service returned an empty result${data.error ? `: ${data.error}` : ""}`
+          );
+        }
+
+        return data.translation;
       } catch (err) {
         lastError = err;
         if (attempt < MAX_RETRIES) {

@@ -29,7 +29,6 @@ export async function processPdfFile(file, opts = {}) {
   const pdf = await loadingTask.promise;
 
   const pages = [];
-
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     onProgress?.({ stage: "extracting-text", page: pageNumber, pageCount: pdf.numPages });
 
