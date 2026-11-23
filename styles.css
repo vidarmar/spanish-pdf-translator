@@ -546,3 +546,42 @@ body {
   opacity: 0.6;
   cursor: wait;
 }
+
+/* ---- Saved translations ---- */
+.saved-section {
+  margin-top: 8px;
+}
+
+.saved-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.saved-count {
+  font-size: 0.8rem;
+  color: var(--text-on-navy);
+}
+
+.clear-saved-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-on-navy);
+  background: transparent;
+  color: var(--text-on-navy);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.clear-saved-btn:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.clear-saved-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

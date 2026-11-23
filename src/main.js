@@ -12,6 +12,7 @@
 // like selecting or dragging in a PDF.
 
 import { translatePages } from "./translateClient.js";
+import { countCachedTranslations, clearTranslationCache, onCacheChange } from "./translationCache.js";
 import { indexPage, removeDocument as removeFromSearchIndex, search } from "./searchIndex.js";
 
 const moduleCache = new Map();
@@ -68,6 +69,38 @@ const el = {
 };
 
 init();
+initSavedTranslations();
+
+/** Sidebar line showing how many translations are saved, with a Clear button. */
+function initSavedTranslations() {
+  const countEl = document.getElementById("saved-count");
+  const clearBtn = document.getElementById("clear-saved-btn");
+  if (!countEl || !clearBtn) return;
+
+  const refresh = async () => {
+    const n = await countCachedTranslations();
+    countEl.textContent = n === 1 ? "1 page saved in this browser" : `${n} pages saved in this browser`;
+    clearBtn.disabled = n === 0;
+  };
+
+  clearBtn.addEventListener("click", async () => {
+    if (clearBtn.dataset.confirm !== "yes") {
+      clearBtn.dataset.confirm = "yes";
+      clearBtn.textContent = "Click again to delete";
+      setTimeout(() => {
+        clearBtn.dataset.confirm = "";
+        clearBtn.textContent = "Clear saved";
+      }, 4000);
+      return;
+    }
+    clearBtn.dataset.confirm = "";
+    clearBtn.textContent = "Clear saved";
+    await clearTranslationCache();
+  });
+
+  onCacheChange(refresh);
+  refresh();
+}
 
 function init() {
   if (!("showDirectoryPicker" in window)) {
@@ -231,10 +264,12 @@ async function processDocument(id, file) {
     // fired silently for every page, no request to /api/translate was ever
     // made, and every page was stuck showing "Translating…" forever even
     // though the document status flipped to "done".
-    await translatePages(
+    let savedPages = 0;
+    const results = await translatePages(
       doc.pages.map((p) => ({ pageNumber: p.pageNumber, text: p.original })),
       {
-        onPageTranslated: (pageNumber, translation) => {
+        onPageTranslated: (pageNumber, translation, info) => {
+          if (info?.fromCache) savedPages++;
           const page = doc.pages.find((p) => p.pageNumber === pageNumber);
           if (page) {
             page.translation = translation;
@@ -246,6 +281,13 @@ async function processDocument(id, file) {
     );
 
     doc.status = "done";
+    const textPages = results.filter((r) => r.translation).length;
+    doc.cacheNote =
+      savedPages === 0
+        ? ""
+        : savedPages === textPages
+          ? `All ${savedPages} pages loaded from saved translations — no AI credits used.`
+          : `${savedPages} of ${textPages} pages loaded from saved translations — no AI credits used for those.`;
   } catch (err) {
     console.error(err);
     doc.status = "error";
@@ -257,7 +299,11 @@ async function processDocument(id, file) {
     // are no page blocks for a per-page error to show up in — so also put
     // the error in the status line, which is always visible regardless of
     // how far processing got.
-    renderStatusIfActive(id, doc.status === "error" ? `⚠ ${doc.errorMessage}` : "", doc.status === "error");
+    renderStatusIfActive(
+      id,
+      doc.status === "error" ? `⚠ ${doc.errorMessage}` : doc.cacheNote || "",
+      doc.status === "error"
+    );
     // Re-render the viewer so a translation failure replaces any stuck
     // "Translating…" placeholders with a visible error instead of leaving
     // pages looking like they're still in progress forever.

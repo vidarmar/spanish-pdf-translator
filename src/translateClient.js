@@ -4,6 +4,7 @@
 // browser never sees it (see /api/translate.js).
 
 import { getAuthHeader, handleUnauthorized } from "./auth.js";
+import { getCachedTranslation, saveTranslation } from "./translationCache.js";
 
 const MAX_RETRIES = 2;
 const MAX_CONCURRENT_REQUESTS = 3;
@@ -36,9 +37,22 @@ function enqueue(task) {
  * @returns {Promise<string>}
  */
 export async function translateText(text) {
-  if (!text || !text.trim()) return "";
+  return (await translateTextDetailed(text)).translation;
+}
 
-  return enqueue(async () => {
+/**
+ * Like translateText, but also says whether the result came from the saved
+ * translations in this browser (free) or from the translation API (paid).
+ * @param {string} text
+ * @returns {Promise<{ translation: string, fromCache: boolean }>}
+ */
+async function translateTextDetailed(text) {
+  if (!text || !text.trim()) return { translation: "", fromCache: false };
+
+  const cached = await getCachedTranslation(text);
+  if (cached) return { translation: cached, fromCache: true };
+
+  const translation = await enqueue(async () => {
     let lastError;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
@@ -87,20 +101,23 @@ export async function translateText(text) {
     }
     throw lastError;
   });
+
+  await saveTranslation(text, translation);
+  return { translation, fromCache: false };
 }
 
 /**
  * Translate every page of a document, reporting progress as each page finishes.
  * @param {Array<{ pageNumber: number, text: string }>} pages
- * @param {{ onPageTranslated?: (pageNumber: number, translation: string) => void }} [opts]
+ * @param {{ onPageTranslated?: (pageNumber: number, translation: string, info: { fromCache: boolean }) => void }} [opts]
  */
 export async function translatePages(pages, opts = {}) {
   const { onPageTranslated } = opts;
   const results = await Promise.all(
     pages.map(async (page) => {
-      const translation = await translateText(page.text);
-      onPageTranslated?.(page.pageNumber, translation);
-      return { pageNumber: page.pageNumber, translation };
+      const { translation, fromCache } = await translateTextDetailed(page.text);
+      onPageTranslated?.(page.pageNumber, translation, { fromCache });
+      return { pageNumber: page.pageNumber, translation, fromCache };
     })
   );
   return results;

@@ -49,6 +49,14 @@ Folder browsing needs a Chromium-based browser (Chrome, Edge). Use drag &amp; dr
 <h2>Documents</h2>
 <ul id="document-list" class="document-list"></ul>
 </section>
+<section class="saved-section">
+<h2>Saved translations</h2>
+<p class="note">Translated pages are kept in this browser, so opening the same PDF again uses no AI credits.</p>
+<div class="saved-row">
+<span id="saved-count" class="saved-count">…</span>
+<button id="clear-saved-btn" type="button" class="clear-saved-btn">Clear saved</button>
+</div>
+</section>
 </aside>
 <section class="viewer">
 <div id="viewer-empty" class="viewer-empty">
@@ -75,7 +83,7 @@ Folder browsing needs a Chromium-based browser (Chrome, Edge). Use drag &amp; dr
 </section>
 </main>
 <footer class="app-footer">
-<p>Files never leave your device except the extracted text sent to the translation service. Nothing is stored on a server.</p>
+<p>Files never leave your device except the extracted text sent to the translation service. Nothing is stored on a server; finished translations are saved only in this browser.</p>
 </footer>
 </div>
 <div id="login-overlay" class="login-overlay" hidden>
