@@ -420,3 +420,129 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Sign-in ---- */
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.account-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.signed-in-as {
+  font-size: 0.8rem;
+  color: var(--text-muted-on-navy);
+}
+
+.sign-out-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-on-navy);
+  background: transparent;
+  color: var(--text-on-navy);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.sign-out-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-hover);
+  color: #ffffff;
+}
+
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(11, 31, 51, 0.92);
+}
+
+.login-overlay[hidden] {
+  display: none;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 28px;
+  background: var(--panel-bg);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.login-card h2 {
+  margin: 0;
+  color: var(--navy);
+}
+
+.login-card .note {
+  color: var(--text-muted);
+  margin: 0 0 10px;
+}
+
+.login-card label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.login-card input[type="text"],
+.login-card input[type="password"] {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.login-card input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.login-card .login-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+
+.login-error {
+  margin: 6px 0 0;
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.login-card button[type="submit"] {
+  margin-top: 12px;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-card button[type="submit"]:hover {
+  background: var(--accent-hover);
+}
+
+.login-card button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

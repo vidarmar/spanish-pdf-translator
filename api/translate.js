@@ -5,6 +5,8 @@
 // live in browser code. Deploy this alongside the static frontend and set
 // ANTHROPIC_API_KEY as an environment variable in the hosting dashboard.
 
+import { requireAuth } from "./_auth.js";
+
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-5";
 const MAX_TEXT_LENGTH = 12000; // guard against runaway cost per request
@@ -14,6 +16,10 @@ export default async function handler(req, res) {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
+
+  // Only signed-in users may spend AI credits. This check is what actually
+  // protects the API key — the sign-in screen in the browser is just the UI.
+  if (!(await requireAuth(req, res))) return;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

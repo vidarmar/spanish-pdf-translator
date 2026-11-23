@@ -3,6 +3,8 @@
 // proxies to the Claude API. The Anthropic API key stays server-side — the
 // browser never sees it (see /api/translate.js).
 
+import { getAuthHeader, handleUnauthorized } from "./auth.js";
+
 const MAX_RETRIES = 2;
 const MAX_CONCURRENT_REQUESTS = 3;
 
@@ -42,9 +44,18 @@ export async function translateText(text) {
       try {
         const res = await fetch("/api/translate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-app-auth": getAuthHeader() },
           body: JSON.stringify({ text, sourceLang: "es", targetLang: "en" }),
         });
+
+        if (res.status === 401) {
+          // Signed out or password changed: don't retry, show the sign-in
+          // screen again.
+          handleUnauthorized();
+          const unauthorized = new Error("Not signed in — please sign in and add the PDF again");
+          unauthorized.noRetry = true;
+          throw unauthorized;
+        }
 
         if (!res.ok) {
           const body = await res.text().catch(() => "");
@@ -68,6 +79,7 @@ export async function translateText(text) {
         return data.translation;
       } catch (err) {
         lastError = err;
+        if (err.noRetry) break;
         if (attempt < MAX_RETRIES) {
           await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
         }

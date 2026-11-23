@@ -13,10 +13,16 @@
 <h1>Spanish → English PDF Translator</h1>
 <p class="subtitle">Translate Spanish PDFs to English, search across them, and export the results — entirely in your browser.</p>
 </div>
+<div class="header-right">
 <div class="brand-badge">
 <img src="assets/logo.png" alt="Marisson Aviation Consulting logo" class="brand-logo"
 onerror="this.style.display='none'" />
 <span class="brand-text">Made by Marisson Aviation Consulting</span>
+</div>
+<div class="account-bar">
+<span id="signed-in-as" class="signed-in-as" hidden></span>
+<button id="sign-out-btn" type="button" class="sign-out-btn" hidden>Sign out</button>
+</div>
 </div>
 </header>
 <main class="app-main">
@@ -72,6 +78,20 @@ Folder browsing needs a Chromium-based browser (Chrome, Edge). Use drag &amp; dr
 <p>Files never leave your device except the extracted text sent to the translation service. Nothing is stored on a server.</p>
 </footer>
 </div>
+<div id="login-overlay" class="login-overlay" hidden>
+<form id="login-form" class="login-card" autocomplete="on">
+<h2>Sign in</h2>
+<p class="note">This translator is private. Sign in to translate PDFs.</p>
+<label for="login-username">Username</label>
+<input id="login-username" name="username" type="text" autocomplete="username" required />
+<label for="login-password">Password</label>
+<input id="login-password" name="password" type="password" autocomplete="current-password" required />
+<label class="login-remember"><input id="login-remember" type="checkbox" checked /> Remember me on this computer</label>
+<p id="login-error" class="login-error" hidden></p>
+<button id="login-submit" type="submit">Sign in</button>
+</form>
+</div>
+<script type="module" src="src/auth.js"></script>
 <script type="module" src="src/main.js"></script>
 </body>
 </html>
